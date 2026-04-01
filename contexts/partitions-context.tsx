@@ -91,9 +91,13 @@ export function PartitionsProvider({ children }: { children: React.ReactNode }) 
     );
   }, []);
 
+  const partitionsById = useMemo(() => {
+    return new Map(partitions.map((item) => [item.id, item] as const));
+  }, [partitions]);
+
   const getPartitionById = useCallback(
-    (id: string) => partitions.find((p) => p.id === id),
-    [partitions]
+    (id: string) => partitionsById.get(id),
+    [partitionsById]
   );
 
   const removePartition = useCallback((id: string) => {

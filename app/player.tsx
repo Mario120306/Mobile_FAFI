@@ -6,7 +6,7 @@ import { useSounds } from '@/contexts/sounds-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Audio } from 'expo-av';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 
 export default function PlayerScreen() {
@@ -145,7 +145,8 @@ export default function PlayerScreen() {
     }
   };
 
-  const progressX = Animated.multiply(progressAnim, trackWidth);
+  const progressX = useMemo(() => Animated.multiply(progressAnim, trackWidth), [progressAnim, trackWidth]);
+  const progressThumbX = useMemo(() => Animated.subtract(progressX, 7), [progressX]);
   const name = soundItem?.filename.replace(/\.[^/.]+$/, '') ?? '';
   const ext = soundItem?.filename.split('.').pop()?.toUpperCase() ?? '';
 
@@ -211,7 +212,7 @@ export default function PlayerScreen() {
               styles.progressThumb,
               {
                 backgroundColor: tintColor,
-                transform: [{ translateX: Animated.subtract(progressX, 7) }],
+                transform: [{ translateX: progressThumbX }],
               },
             ]}
           />

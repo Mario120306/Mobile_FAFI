@@ -4,14 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { memo, useEffect, useRef } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -79,7 +79,11 @@ const DotsLoader = memo(function DotsLoader() {
           Animated.timing(dot, { toValue: 0, duration: 0, delay: 600 - delay, useNativeDriver: USE_NATIVE_DRIVER }),
         ])
       );
-    Animated.parallel(dots.map((d, i) => anim(d, i * 150))).start();
+    const loop = Animated.parallel(dots.map((d, i) => anim(d, i * 150)));
+    loop.start();
+    return () => {
+      loop.stop();
+    };
   }, []);
 
   return (
@@ -112,10 +116,14 @@ const PulseRing = memo(function PulseRing() {
           ]),
         ])
       );
-    Animated.parallel([
+    const loop = Animated.parallel([
       pulse(scale1, opac1, 0, 0.6),
       pulse(scale2, opac2, 600, 0.3),
-    ]).start();
+    ]);
+    loop.start();
+    return () => {
+      loop.stop();
+    };
   }, []);
 
   return (
