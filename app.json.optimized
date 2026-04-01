@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "iosDeploymentTarget": "14.0",
+    "sdkVersion": "54.0.0",
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "build": {
+        "babel": {
+          "enabled": true
+        }
+      }
+    },
+    "optimization": {
+      "jsModule": {
+        "excludeCLI": false,
+        "globalizeGetters": false,
+        "includes": ["expo-router"]
+      }
+    }
+  }
+}

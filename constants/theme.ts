@@ -5,27 +5,50 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Palette aligned with the design reference in app/(tabs)/index.tsx
+const BRAND = {
+  bg: '#0e0e0e',
+  bg2: '#141414',
+  bg3: '#1a1a1a',
+  text: '#f0ede6',
+  muted: '#6b6b6b',
+  border: 'rgba(255,255,255,0.07)',
+  accent: '#c8f135',
+  accent2: '#3b82f6',
+  accent3: '#f59e0b',
+} as const;
 
 export const Colors = {
+  // Keep both modes but make them visually consistent with the reference design.
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: BRAND.text,
+    background: BRAND.bg,
+    tint: BRAND.accent,
+    icon: BRAND.muted,
+    tabIconDefault: BRAND.muted,
+    tabIconSelected: BRAND.accent,
+    bg2: BRAND.bg2,
+    bg3: BRAND.bg3,
+    muted: BRAND.muted,
+    border: BRAND.border,
+    accent2: BRAND.accent2,
+    accent3: BRAND.accent3,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: BRAND.text,
+    background: BRAND.bg,
+    tint: BRAND.accent,
+    icon: BRAND.muted,
+    tabIconDefault: BRAND.muted,
+    tabIconSelected: BRAND.accent,
+    bg2: BRAND.bg2,
+    bg3: BRAND.bg3,
+    muted: BRAND.muted,
+    border: BRAND.border,
+    accent2: BRAND.accent2,
+    accent3: BRAND.accent3,
   },
-};
+} as const;
 
 export const Fonts = Platform.select({
   ios: {
