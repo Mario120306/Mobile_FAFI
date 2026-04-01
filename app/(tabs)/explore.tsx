@@ -8,12 +8,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { memo, useCallback, useRef } from 'react';
 import {
-  Alert,
-  Animated,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  View,
+    Alert,
+    Animated,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    View,
 } from 'react-native';
 
 function PartitionCard({ item, tintColor, onPress, onDelete }: { item: { id: string; title: string; createdAt: number }; tintColor: string; onPress: () => void; onDelete: () => void; }) {
@@ -120,6 +120,10 @@ export default function PartitionsScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews
         />
       )}
 

@@ -26,8 +26,11 @@ export function HelloWave() {
         useNativeDriver: true,
       }),
     ]);
-
-    Animated.loop(swing, { iterations: 4 }).start();
+    const loop = Animated.loop(swing, { iterations: 4 });
+    loop.start();
+    return () => {
+      loop.stop();
+    };
   }, [progress]);
 
   const rotate = progress.interpolate({
