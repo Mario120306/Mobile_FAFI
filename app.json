@@ -18,7 +18,8 @@
         "foregroundImage": "./assets/images/logo_fafi.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.FaFi"
     },
     "web": {
       "output": "static",
@@ -42,6 +43,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6330e266-195d-4dfb-9aef-7ab0a3d64c45"
+      }
     }
   }
 }
