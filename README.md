@@ -1,51 +1,98 @@
-# Welcome to your Expo app 👋
+# FaFi - Gestionnaire de partitions et playbacks
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+FaFi est une application mobile créée avec Expo (React Native) pour gérer des partitions musicales, enregistrer des lyrics, scanner du texte et lire des playbacks.
 
-## Get started
+## Fonctionnalités principales
 
-1. Install dependencies
+- CRUD de partitions : création, modification, suppression.
+- Stockage local via `AsyncStorage` (`@react-native-async-storage/async-storage`).
+- Listing et tri pour afficher les partitions les plus récentes.
+- Scanner et sauvegarder du texte en tant que partition.
+- Navigation multi-écrans avec le router Expo (file-based routing).
+
+## Architecture
+
+- `app/` : écran et navigation.
+  - `app/(tabs)/` : écran principal, explore, playbacks.
+  - `app/partitions/` : scan et détails de partition.
+- `contexts/partitions-context.tsx` : état global des partitions + persistance.
+- `components/ui/` : composants UI réutilisables.
+- `hooks/` : utilitaires pour schéma de couleurs.
+- `constants/theme.ts` : thème couleur et styles.
+
+## Stockage et limites
+
+- Partitions stockées sous `STORAGE_KEY = '@fafi_partitions'`.
+- Sérialisé en JSON via `AsyncStorage.setItem` / `getItem`.
+- Aucune limite applicative fixée dans le code (pas de `MAX_PARTITIONS`).
+- Limite dépend du quota de l’appareil et `AsyncStorage` (en pratique, potentiellement quelques Mo selon plateforme).
+
+### Se prémunir des erreurs d’espace
+
+- Gérer les exceptions sur `AsyncStorage.setItem` et `getItem`.
+- Supprimer les partitions inutiles.
+- En cas de quota atteint, afficher un message à l’utilisateur et proposer suppression.
+
+## Installation
+
+1. Cloner le dépôt
+
+   ```bash
+   git clone <repo-url>
+   cd FaFi
+   ```
+
+2. Installer les dépendances
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Lancer le projet
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+4. Ouvrir sur Android/iOS/Web via le CLI Expo.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Structure de données
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Partition (interface) :
 
-## Get a fresh project
+- `id: string`
+- `title: string`
+- `lyrics: string`
+- `createdAt: number`
 
-When you're ready, run:
+Les partitions sont maintenues en mémoire dans le contexte puis persistées en local.
 
-```bash
-npm run reset-project
-```
+## Flux principal
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+1. Au démarrage, `PartitionsProvider` charge `@fafi_partitions` et hydrate l’état.
+2. Ajout/modification/suppression met à jour l’état puis écrit dans `AsyncStorage`.
+3. Le composant `app/(tabs)/explore.tsx` affiche la liste.
+4. Les écrans `app/partitions/[id].tsx` et `app/partitions/scan.tsx` permettent gestion et scan.
 
-## Learn more
+## Comment l’application a été conçue
 
-To learn more about developing your project with Expo, look at the following resources:
+- centralisation du modèle (partition) dans un contexte React pour simplifier l’accès depuis tous les écrans.
+- persistance transparente via effet `useEffect` sur `partitions`.
+- protection minimale : conversion, sanitization côté lecture (title et lyrics) pour garder les données saines.
+- UX simple : interface plateforme native, actions de suppression et navigation directe.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Contributions
 
-## Join the community
+- Faire un fork et ouvrir un PR.
+- Ajouter tests et typages TypeScript.
+- Valider compatibilité Android/iOS/web.
 
-Join our community of developers creating universal apps.
+## Commandes utiles
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-"# Mobile_FAFI" 
+- `npm start` / `npx expo start`
+- `npm run android` / `npm run ios` (selon configuration)
+- `npm run lint`, `npm run format`
+
+---
+
+Ce README explique le fonctionnement de l’application et les choix de conception par rapport au stockage de partitions et à l’architecture contextuelle. En cas d’évolution, documenter les nouvelles routes ou le nouveau modèle de données ici. 

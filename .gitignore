@@ -41,3 +41,44 @@ app-example
 # generated native folders
 /ios
 /android
+
+# IDEs
+.vscode/
+.idea/
+
+# build artifacts
+**/build/
+**/dist/
+**/out/
+
+# gradle
+.gradle/
+**/*.keystore
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+expo-debug.log*
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# APK / Android bundles
+*.apk
+*.aab
+*.obb
+*.apks
+
+# fichiers volumineux générés
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# misc
+*.log
+*.tmp
+.DS_Store
