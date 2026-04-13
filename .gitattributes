@@ -1,0 +1,29 @@
+# Enforce Unix-style line endings for source files
+* text=auto
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.txt text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.csv text eol=lf
+
+# Binary files should not be normalized
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp3 binary
+*.aac binary
+*.otf binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.ico binary
+*.pdf binary

@@ -13,7 +13,7 @@ export default function PlayerScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { sounds, removeSound } = useSounds();
+  const { sounds } = useSounds();
   const soundRef = useRef<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +24,11 @@ export default function PlayerScreen() {
   const lastStatusUpdateAt = useRef(0);
 
   const soundItem = sounds.find((sound) => sound.id === id);
-  const tintColor = Colors[colorScheme ?? 'light'].tint;
+  const theme = colorScheme ?? 'light';
+  const tintColor = Colors[theme].tint;
+  const surface = Colors[theme].surface;
+  const surface2 = Colors[theme].surface2;
+  const surfaceBorder = Colors[theme].surfaceBorder;
 
   useEffect(() => {
     const load = async () => {
@@ -39,7 +43,7 @@ export default function PlayerScreen() {
           playThroughEarpieceAndroid: false,
         });
         const { sound } = await Audio.Sound.createAsync(
-          { uri: soundItem.uri },
+          soundItem.source,
           { shouldPlay: true, volume: 1.0 }
         );
         await sound.setVolumeAsync(1.0);
@@ -117,21 +121,6 @@ export default function PlayerScreen() {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const handleDelete = () => {
-    if (!soundItem) return;
-    Alert.alert('Supprimer', `Supprimer "${soundItem.filename}" ?`, [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Supprimer',
-        style: 'destructive',
-        onPress: () => {
-          removeSound(soundItem.id);
-          router.back();
-        },
-      },
-    ]);
-  };
-
   const handleSeek = async (locationX: number) => {
     if (!soundRef.current || durationMs <= 0 || trackWidth <= 0) return;
     const ratio = Math.min(Math.max(locationX / trackWidth, 0), 1);
@@ -155,7 +144,7 @@ export default function PlayerScreen() {
       <ThemedView style={styles.container}>
         <View style={styles.header}>
           <ThemedText style={styles.eyebrow}>LECTURE</ThemedText>
-          <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+          <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: surface, borderColor: surfaceBorder }]}>
             <IconSymbol name="xmark" size={16} color={tintColor} />
           </Pressable>
         </View>
@@ -175,7 +164,7 @@ export default function PlayerScreen() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <ThemedText style={styles.eyebrow}>EN LECTURE</ThemedText>
-        <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: surface, borderColor: surfaceBorder }]}>
           <IconSymbol name="xmark" size={16} color={tintColor} />
         </Pressable>
       </View>
@@ -204,7 +193,7 @@ export default function PlayerScreen() {
         <Pressable
           onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
           onPress={(event) => handleSeek(event.nativeEvent.locationX)}
-          style={styles.progressTrack}
+          style={[styles.progressTrack, { backgroundColor: surface2 }]}
         >
           <Animated.View style={[styles.progressFill, { width: progressX, backgroundColor: tintColor }]} />
           <Animated.View
@@ -226,7 +215,7 @@ export default function PlayerScreen() {
       {/* ── Controls ── */}
       <View style={styles.controls}>
         <Pressable
-          style={[styles.sideBtn, { borderColor: `${tintColor}40` }]}
+          style={[styles.sideBtn, { borderColor: `${tintColor}40`, backgroundColor: surface }]}
           onPress={handleStop}
           disabled={isLoading}
         >
@@ -245,12 +234,6 @@ export default function PlayerScreen() {
           />
         </Pressable>
 
-        <Pressable
-          style={[styles.sideBtn, { borderColor: 'rgba(255,59,48,0.35)' }]}
-          onPress={handleDelete}
-        >
-          <IconSymbol name="trash" size={18} color="#ff3b30" />
-        </Pressable>
       </View>
 
       {/* ── Footer card ── */}

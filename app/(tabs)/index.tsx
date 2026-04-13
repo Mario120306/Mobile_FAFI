@@ -1,8 +1,12 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors } from '@/constants/theme';
 import { useLoading } from '@/contexts/loading-context';
+import { useThemeMode } from '@/contexts/theme-mode-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
-import { memo, useEffect, useRef } from 'react';
+import { createContext, memo, useContext, useEffect, useMemo, useRef } from 'react';
 import {
     Animated,
     Dimensions,
@@ -17,18 +21,29 @@ import {
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
-// ─── Palette EnDasmu ────────────────────────────────────────────────────────
-const C = {
-  bg:      '#0e0e0e',
-  bg2:     '#141414',
-  bg3:     '#1a1a1a',
-  text:    '#f0ede6',
-  muted:   '#6b6b6b',
-  border:  'rgba(255,255,255,0.07)',
-  accent:  '#c8f135',   // vert citron signature
-  accent2: '#3b82f6',   // bleu
-  accent3: '#f59e0b',   // ambre
+type HomePalette = {
+  bg: string;
+  bg2: string;
+  bg3: string;
+  text: string;
+  muted: string;
+  border: string;
+  accent: string;
+  accent2: string;
+  accent3: string;
+  surface: string;
+  surfaceBorder: string;
+  onTint: string;
 };
+
+type HomeThemeContextValue = { C: HomePalette; s: ReturnType<typeof createStyles> };
+const HomeThemeContext = createContext<HomeThemeContextValue | null>(null);
+
+function useHomeTheme() {
+  const ctx = useContext(HomeThemeContext);
+  if (!ctx) throw new Error('HomeThemeContext missing');
+  return ctx;
+}
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 const STATS = [
@@ -65,6 +80,7 @@ const AVATARS = ['#7c3aed', '#db2777', '#059669', '#d97706'];
 
 // ─── Animated dots loader ─────────────────────────────────────────────────────
 const DotsLoader = memo(function DotsLoader() {
+  const { s } = useHomeTheme();
   const d1 = useRef(new Animated.Value(0)).current;
   const d2 = useRef(new Animated.Value(0)).current;
   const d3 = useRef(new Animated.Value(0)).current;
@@ -97,6 +113,7 @@ const DotsLoader = memo(function DotsLoader() {
 
 // ─── Pulsing ring around logo ─────────────────────────────────────────────────
 const PulseRing = memo(function PulseRing() {
+  const { s, C } = useHomeTheme();
   const scale1 = useRef(new Animated.Value(1)).current;
   const opac1  = useRef(new Animated.Value(0.6)).current;
   const scale2 = useRef(new Animated.Value(1)).current;
@@ -158,6 +175,7 @@ const Blob = memo(function Blob({
 
 // ─── Stat item ───────────────────────────────────────────────────────────────
 const StatItem = memo(function StatItem({ value, label, last }: { value: string; label: string; last?: boolean }) {
+  const { s } = useHomeTheme();
   return (
     <View style={[s.statItem, !last && s.statItemBorder]}>
       <Text style={s.statNum}>{value}</Text>
@@ -168,6 +186,7 @@ const StatItem = memo(function StatItem({ value, label, last }: { value: string;
 
 // ─── Media card ──────────────────────────────────────────────────────────────
 const MediaCard = memo(function MediaCard({ image, label, bg }: typeof CARDS[0]) {
+  const { s } = useHomeTheme();
   return (
     <View style={s.mediaCard}>
       <LinearGradient colors={bg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.mediaCardGrad}>
@@ -184,6 +203,7 @@ const MediaCard = memo(function MediaCard({ image, label, bg }: typeof CARDS[0])
 const FeatureCard = memo(function FeatureCard({
   feature, onPress,
 }: { feature: typeof FEATURES[0]; onPress: () => void }) {
+  const { s } = useHomeTheme();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.featureCard, pressed && { opacity: 0.75 }]}>
       <View style={[s.featureIconBubble, { backgroundColor: feature.iconBg }]}>
@@ -197,6 +217,7 @@ const FeatureCard = memo(function FeatureCard({
 
 // ─── Avatar stack ─────────────────────────────────────────────────────────────
 const AvatarStack = memo(function AvatarStack() {
+  const { s, C } = useHomeTheme();
   return (
     <View style={s.avatarRow}>
       {AVATARS.map((bg, i) => (
@@ -215,6 +236,29 @@ const AvatarStack = memo(function AvatarStack() {
 export default function HomeScreen() {
   const router = useRouter();
   const { isLoading, setIsLoading } = useLoading();
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = colorScheme;
+  const { toggleMode } = useThemeMode();
+
+  const C = useMemo<HomePalette>(() => {
+    const t = Colors[theme];
+    return {
+      bg: t.background,
+      bg2: t.bg2,
+      bg3: t.bg3,
+      text: t.text,
+      muted: t.muted,
+      border: t.border,
+      accent: t.tint,
+      accent2: t.accent2,
+      accent3: t.accent3,
+      surface: t.surface,
+      surfaceBorder: t.surfaceBorder,
+      onTint: t.onTint,
+    };
+  }, [theme]);
+
+  const s = useMemo(() => createStyles(C), [C]);
 
   // ── Splash anims ──
   const logoFade    = useRef(new Animated.Value(0)).current;
@@ -282,11 +326,12 @@ export default function HomeScreen() {
   // ── SPLASH ──────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
+      <HomeThemeContext.Provider value={{ C, s }}>
       <Animated.View style={[s.splashBg, { opacity: splashFade }]}>
         {/* blobs décoratifs */}
-        <Blob size={320} color="#c8f135" top={-100} right={-100} opacity={0.10} />
-        <Blob size={200} color="#3b82f6" bottom={-60} left={-60} opacity={0.10} />
-        <Blob size={120} color="#f59e0b" top={SCREEN_H * 0.4} left={SCREEN_W * 0.6} opacity={0.08} />
+        <Blob size={320} color={C.accent} top={-100} right={-100} opacity={0.10} />
+        <Blob size={200} color={C.accent2} bottom={-60} left={-60} opacity={0.10} />
+        <Blob size={120} color={C.accent3} top={SCREEN_H * 0.4} left={SCREEN_W * 0.6} opacity={0.08} />
 
         {/* Logo + rings pulsants */}
         <View style={s.splashLogoWrap}>
@@ -325,11 +370,13 @@ export default function HomeScreen() {
           <DotsLoader />
         </Animated.View>
       </Animated.View>
+      </HomeThemeContext.Provider>
     );
   }
 
   // ── MAIN ────────────────────────────────────────────────────────────────────
   return (
+    <HomeThemeContext.Provider value={{ C, s }}>
     <Animated.View style={{ flex: 1, opacity: contentFade, backgroundColor: C.bg }}>
       <ScrollView
         style={{ flex: 1 }}
@@ -340,15 +387,15 @@ export default function HomeScreen() {
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <View style={s.hero}>
           {/* blobs */}
-          <Blob size={260} color="#c8f135" top={-60}  right={-60}  opacity={0.22} />
-          <Blob size={160} color="#3b82f6" top={160}  right={30}   opacity={0.18} />
-          <Blob size={100} color="#f59e0b" top={100}  left={20}    opacity={0.14} />
+          <Blob size={260} color={C.accent} top={-60}  right={-60}  opacity={0.22} />
+          <Blob size={160} color={C.accent2} top={160}  right={30}   opacity={0.18} />
+          <Blob size={100} color={C.accent3} top={100}  left={20}    opacity={0.14} />
 
           {/* navbar */}
           <View style={s.navbar}>
             <Text style={s.navLogo}>Fa<Text style={{ color: C.accent }}>Fi</Text></Text>
-            <Pressable style={s.navCta}>
-              <Text style={s.navCtaTxt}>STK</Text>
+            <Pressable style={s.navCta} onPress={toggleMode} hitSlop={10}>
+              <IconSymbol name={theme === 'dark' ? 'sun.max.fill' : 'moon.fill'} size={18} color={C.text} />
             </Pressable>
           </View>
 
@@ -443,10 +490,10 @@ export default function HomeScreen() {
         {/* ── CTA BANNER ────────────────────────────────────────────────────── */}
         <View style={s.ctaWrap}>
           <LinearGradient
-            colors={['#141414', '#1a1a1a']}
+            colors={[C.bg2, C.bg3]}
             style={s.ctaBanner}
           >
-            <Blob size={220} color="#c8f135" top={-60} right={-60} opacity={0.1} />
+            <Blob size={220} color={C.accent} top={-60} right={-60} opacity={0.1} />
             <Text style={s.ctaTitle}>
               Rejoignez{'\n'}<Text style={{ color: C.accent }}>FaFi</Text> aujourd'hui.
             </Text>
@@ -464,13 +511,14 @@ export default function HomeScreen() {
 
       </ScrollView>
     </Animated.View>
+    </HomeThemeContext.Provider>
   );
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const CARD_SIZE = (SCREEN_W - 48 - 10) / 2;
 
-const s = StyleSheet.create({
+const createStyles = (C: HomePalette) => StyleSheet.create({
 
   // ── SPLASH ──
   splashBg: {
@@ -505,7 +553,7 @@ const s = StyleSheet.create({
   splashLogoCircle: {
     width: 120, height: 120,
     borderRadius: 60,
-    backgroundColor: '#141414',
+    backgroundColor: C.bg2,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -565,7 +613,7 @@ const s = StyleSheet.create({
   },
   navCta: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: C.border,
     borderRadius: 50,
     paddingHorizontal: 18,
     paddingVertical: 8,
@@ -632,7 +680,7 @@ const s = StyleSheet.create({
   btnPrimaryTxt: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0e0e0e',
+    color: C.onTint,
   },
   btnGhost: {},
   btnGhostTxt: {

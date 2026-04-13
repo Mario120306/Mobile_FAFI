@@ -5,11 +5,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useSounds } from '@/contexts/sounds-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import { memo, useCallback, useRef } from 'react';
 import {
-    Alert,
     Animated,
     FlatList,
     Pressable,
@@ -21,13 +19,15 @@ import {
 function SoundCard({
   item,
   tintColor,
+  surface,
+  surfaceBorder,
   onPlay,
-  onDelete,
 }: {
-  item: { id: string; filename: string; createdAt: number };
+  item: { id: string; filename: string };
   tintColor: string;
+  surface: string;
+  surfaceBorder: string;
   onPlay: () => void;
-  onDelete: () => void;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -38,11 +38,6 @@ function SoundCard({
 
   const name = item.filename.replace(/\.[^/.]+$/, '');
   const ext = item.filename.split('.').pop()?.toUpperCase() ?? '';
-  const date = new Date(item.createdAt).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
 
   return (
     <Animated.View style={{ transform: [{ scale }], marginBottom: 10 }}>
@@ -50,7 +45,7 @@ function SoundCard({
         onPressIn={pressIn}
         onPressOut={pressOut}
         onPress={onPlay}
-        style={styles.card}
+        style={[styles.card, { backgroundColor: surface, borderColor: surfaceBorder }]}
       >
         {/* Play button */}
         <View style={[styles.playCircle, { backgroundColor: tintColor }]}>
@@ -66,17 +61,12 @@ function SoundCard({
             <View style={[styles.extBadge, { borderColor: tintColor, backgroundColor: `${tintColor}18` }]}>
               <ThemedText style={[styles.extText, { color: tintColor }]}>{ext}</ThemedText>
             </View>
-            <ThemedText style={styles.dateText}>{date}</ThemedText>
           </View>
         </View>
 
         {/* Mini waveform */}
         <MiniWave tintColor={tintColor} />
 
-        {/* Delete */}
-        <Pressable onPress={onDelete} hitSlop={10} style={styles.deleteBtn}>
-          <IconSymbol name="trash" size={16} color="#ff3b30" />
-        </Pressable>
       </Pressable>
     </Animated.View>
   );
@@ -104,8 +94,8 @@ function EmptyState({ tintColor }: { tintColor: string }) {
       <View style={[styles.emptyIconWrap, { borderColor: `${tintColor}40` }]}>
         <IconSymbol name="music.note" size={40} color={tintColor} />
       </View>
-      <ThemedText style={styles.emptyTitle}>Aucun son ajouté</ThemedText>
-      <ThemedText style={styles.emptyHint}>Appuyez sur + pour importer un fichier audio</ThemedText>
+      <ThemedText style={styles.emptyTitle}>Aucun playback disponible</ThemedText>
+      <ThemedText style={styles.emptyHint}>Ajoutez des fichiers mp3 dans assets/playbacks et mettez à jour assets/playbacks/index.ts</ThemedText>
     </View>
   );
 }
@@ -114,64 +104,23 @@ function EmptyState({ tintColor }: { tintColor: string }) {
 export default function PlaybacksScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const { sounds, addSound, removeSound } = useSounds();
+  const { sounds } = useSounds();
   const theme = colorScheme ?? 'light';
   const tintColor = Colors[theme].tint;
-
-  const pickAudioFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['audio/*'],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-
-      if (result.canceled) return;
-
-      const asset = result.assets?.[0];
-      if (!asset?.uri) {
-        Alert.alert('Erreur', 'Aucun fichier valide sélectionné');
-        return;
-      }
-
-      const filename = asset.name ?? 'audio';
-      if (sounds.some((s) => s.filename === filename)) {
-        Alert.alert('Attention', `"${filename}" existe déjà`);
-        return;
-      }
-
-      Alert.alert('Ajouter', `Ajouter "${filename}" ?`, [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Ajouter',
-          onPress: () => {
-            addSound({ filename, uri: asset.uri });
-            Alert.alert('Succès', `"${filename}" ajouté`);
-          },
-        },
-      ]);
-    } catch {
-      Alert.alert('Erreur', 'Impossible de sélectionner un fichier');
-    }
-  };
-
-  const handleDeleteSound = useCallback((id: string, filename: string) => {
-    Alert.alert('Supprimer', `Supprimer "${filename}" ?`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', onPress: () => removeSound(id), style: 'destructive' },
-    ]);
-  }, [removeSound]);
+  const surface = Colors[theme].surface;
+  const surfaceBorder = Colors[theme].surfaceBorder;
 
   const renderItem = useCallback(
-    ({ item }: { item: { id: string; filename: string; createdAt: number } }) => (
+    ({ item }: { item: { id: string; filename: string } }) => (
       <MemoSoundCard
         item={item}
         tintColor={tintColor}
+        surface={surface}
+        surfaceBorder={surfaceBorder}
         onPlay={() => router.push({ pathname: '/player', params: { id: item.id } })}
-        onDelete={() => handleDeleteSound(item.id, item.filename)}
       />
     ),
-    [handleDeleteSound, router, tintColor]
+    [router, surface, surfaceBorder, tintColor]
   );
 
   return (
@@ -209,11 +158,6 @@ export default function PlaybacksScreen() {
           removeClippedSubviews
         />
       )}
-
-      {/* ── FAB ── */}
-      <Pressable style={[styles.fab, { backgroundColor: tintColor }]} onPress={pickAudioFile}>
-        <IconSymbol name="plus" size={28} color="#fff" />
-      </Pressable>
     </ThemedView>
   );
 }

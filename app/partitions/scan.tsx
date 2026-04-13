@@ -7,11 +7,15 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const ACTION_BAR_MIN_HEIGHT = 68;
 
 export default function PartitionScanScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const { addPartition } = usePartitions();
+  const insets = useSafeAreaInsets();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scannerEnabled, setScannerEnabled] = useState(false);
@@ -22,6 +26,10 @@ export default function PartitionScanScreen() {
   const tintColor = Colors[theme].tint;
   const hasPermission = permission?.granted;
 
+  const onTint = Colors[theme].onTint;
+  const surface = Colors[theme].surface;
+  const surface2 = Colors[theme].surface2;
+  const surfaceBorder = Colors[theme].surfaceBorder;
   useEffect(() => {
     requestPermission();
   }, [requestPermission]);
@@ -119,7 +127,16 @@ export default function PartitionScanScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       {cameraContent}
 
-      <View style={styles.bottomPanel}>
+      <View
+        style={[
+          styles.bottomPanel,
+          {
+            backgroundColor: Colors[theme].bg2,
+            borderTopColor: Colors[theme].border,
+            paddingBottom: 18 + insets.bottom + ACTION_BAR_MIN_HEIGHT,
+          },
+        ]}
+      >
         <ThemedText style={styles.title}>
           Scan QR / Saisie manuelle
         </ThemedText>
@@ -142,46 +159,52 @@ export default function PartitionScanScreen() {
             }
           }}
         >
-          <ThemedText style={[styles.buttonText, { color: '#0e0e0e' }]}>
+          <ThemedText style={[styles.buttonText, { color: onTint }]}>
             Activer le scanner QR
           </ThemedText>
         </Pressable>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { borderColor: surfaceBorder, backgroundColor: surface2, color: Colors[theme].text }]}
           multiline
           value={manualInput}
           onChangeText={setManualInput}
           placeholder='{ "title":"...","lyrics":"..." }'
-          placeholderTextColor="rgba(240,237,230,0.45)"
+          placeholderTextColor={Colors[theme].muted}
         />
+      </View>
 
-        <Pressable
-          style={[styles.buttonPrimary, { backgroundColor: tintColor }]}
-          onPress={onManualSave}
-        >
-          <ThemedText style={[styles.buttonText, { color: '#0e0e0e' }]}>
-            Enregistrer
-          </ThemedText>
-        </Pressable>
-
-        <Pressable
-          style={[styles.buttonGhost, { marginTop: 10 }]}
-          onPress={() =>
-            router.replace({ pathname: '/(tabs)/explore' } as any)
-          }
-        >
-          <ThemedText style={styles.buttonGhostText}>
-            Annuler
-          </ThemedText>
-        </Pressable>
+      <View
+        style={[
+          styles.actionBar,
+          {
+            backgroundColor: Colors[theme].bg2,
+            borderTopColor: Colors[theme].border,
+            paddingBottom: 12 + insets.bottom,
+          },
+        ]}
+      >
+        <View style={styles.actionRow}>
+          <Pressable
+            style={[styles.buttonGhost, { flex: 1, borderColor: surfaceBorder, backgroundColor: surface }]}
+            onPress={() => router.replace({ pathname: '/(tabs)/explore' } as any)}
+          >
+            <ThemedText style={styles.buttonGhostText}>Annuler</ThemedText>
+          </Pressable>
+          <Pressable
+            style={[styles.buttonPrimary, { flex: 1, backgroundColor: tintColor }]}
+            onPress={onManualSave}
+          >
+            <ThemedText style={[styles.buttonText, { color: onTint }]}>Enregistrer</ThemedText>
+          </Pressable>
+        </View>
       </View>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0e0e0e' },
+  container: { flex: 1 },
   camera: { flex: 1 },
   bottomPanel: {
     position: 'absolute',
@@ -190,9 +213,22 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     paddingBottom: 18,
-    backgroundColor: 'rgba(20,20,20,0.92)',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
+  },
+  actionBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    minHeight: 68,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
   },
   title: {
     fontSize: 18,
@@ -208,9 +244,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    color: '#f0ede6',
     padding: 10,
     marginBottom: 10,
     textAlignVertical: 'top',
@@ -226,8 +259,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   buttonText: {
     fontWeight: '800',

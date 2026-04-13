@@ -1,38 +1,18 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { PLAYBACK_TRACKS, PlaybackTrack } from '@/assets/playbacks';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
-export interface Sound {
-  id: string;
-  filename: string;
-  uri: string;
-  createdAt: number;
-}
+export interface Sound extends PlaybackTrack {}
 
 interface SoundsContextType {
   sounds: Sound[];
-  addSound: (sound: { filename: string; uri: string }) => void;
-  removeSound: (id: string) => void;
 }
 
 const SoundsContext = createContext<SoundsContextType | undefined>(undefined);
 
 export function SoundsProvider({ children }: { children: React.ReactNode }) {
-  const [sounds, setSounds] = useState<Sound[]>([]);
+  const [sounds] = useState<Sound[]>(PLAYBACK_TRACKS);
 
-  const addSound = useCallback((sound: { filename: string; uri: string }) => {
-    const newSound: Sound = {
-      id: String(Date.now()),
-      filename: sound.filename,
-      uri: sound.uri,
-      createdAt: Date.now(),
-    };
-    setSounds((prev) => [...prev, newSound]);
-  }, []);
-
-  const removeSound = useCallback((id: string) => {
-    setSounds((prev) => prev.filter((sound) => sound.id !== id));
-  }, []);
-
-  const value = useMemo(() => ({ sounds, addSound, removeSound }), [sounds, addSound, removeSound]);
+  const value = useMemo(() => ({ sounds }), [sounds]);
 
   return (
     <SoundsContext.Provider value={value}>

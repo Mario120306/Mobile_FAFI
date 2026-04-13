@@ -25,6 +25,8 @@ const MAPPING = {
   'trash': 'delete',
   'plus': 'add',
   'xmark': 'close',
+  'moon.fill': 'dark-mode',
+  'sun.max.fill': 'light-mode',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
 } as IconMapping;

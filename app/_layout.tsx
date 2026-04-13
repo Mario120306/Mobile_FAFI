@@ -7,6 +7,7 @@ import { enableScreens } from 'react-native-screens';
 import { LoadingProvider } from '@/contexts/loading-context';
 import { PartitionsProvider } from '@/contexts/partitions-context';
 import { SoundsProvider } from '@/contexts/sounds-context';
+import { ThemeModeProvider } from '@/contexts/theme-mode-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
@@ -16,6 +17,14 @@ export const unstable_settings = {
 enableScreens(true);
 
 export default function RootLayout() {
+  return (
+    <ThemeModeProvider>
+      <RootLayoutInner />
+    </ThemeModeProvider>
+  );
+}
+
+function RootLayoutInner() {
   const colorScheme = useColorScheme();
 
   return (

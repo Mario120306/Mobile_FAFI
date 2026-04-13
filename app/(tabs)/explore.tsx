@@ -1,3 +1,4 @@
+import { ASSET_PARTITIONS } from '@/assets/partitions';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { FaFiEmoji } from '@/components/ui/fafi-emoji';
@@ -6,7 +7,7 @@ import { Colors } from '@/constants/theme';
 import { usePartitions } from '@/contexts/partitions-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
     Alert,
     Animated,
@@ -16,7 +17,21 @@ import {
     View,
 } from 'react-native';
 
-function PartitionCard({ item, tintColor, onPress, onDelete }: { item: { id: string; title: string; createdAt: number }; tintColor: string; onPress: () => void; onDelete: () => void; }) {
+function PartitionCard({
+  item,
+  tintColor,
+  surface,
+  surfaceBorder,
+  onPress,
+  onDelete,
+}: {
+  item: { id: string; title: string; createdAt?: number; kind: 'scanned' | 'asset' };
+  tintColor: string;
+  surface: string;
+  surfaceBorder: string;
+  onPress: () => void;
+  onDelete?: () => void;
+}) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const pressIn = () =>
@@ -24,11 +39,15 @@ function PartitionCard({ item, tintColor, onPress, onDelete }: { item: { id: str
   const pressOut = () =>
     Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
 
-  const date = new Date(item.createdAt).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  const subtitle = useMemo(() => {
+    if (item.kind === 'asset') return 'STOCKÉE';
+    if (!item.createdAt) return '';
+    return new Date(item.createdAt).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }, [item.createdAt, item.kind]);
 
   return (
     <Animated.View style={{ transform: [{ scale }], marginBottom: 10 }}>
@@ -36,7 +55,7 @@ function PartitionCard({ item, tintColor, onPress, onDelete }: { item: { id: str
         onPressIn={pressIn}
         onPressOut={pressOut}
         onPress={onPress}
-        style={styles.card}
+        style={[styles.card, { backgroundColor: surface, borderColor: surfaceBorder }]}
       >
         <View style={[styles.playCircle, { backgroundColor: tintColor }]}> 
           <IconSymbol name="music.note" size={16} color="#fff" />
@@ -45,11 +64,13 @@ function PartitionCard({ item, tintColor, onPress, onDelete }: { item: { id: str
           <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.trackName}>
             {item.title}
           </ThemedText>
-          <ThemedText style={styles.dateText}>{date}</ThemedText>
+          {!!subtitle && <ThemedText style={styles.dateText}>{subtitle}</ThemedText>}
         </View>
-        <Pressable onPress={onDelete} hitSlop={10} style={styles.deleteBtn}>
-          <IconSymbol name="trash" size={16} color="#ff3b30" />
-        </Pressable>
+        {onDelete ? (
+          <Pressable onPress={onDelete} hitSlop={10} style={styles.deleteBtn}>
+            <IconSymbol name="trash" size={16} color="#ff3b30" />
+          </Pressable>
+        ) : null}
       </Pressable>
     </Animated.View>
   );
@@ -57,14 +78,18 @@ function PartitionCard({ item, tintColor, onPress, onDelete }: { item: { id: str
 
 const MemoPartitionCard = memo(PartitionCard);
 
-function EmptyState({ tintColor }: { tintColor: string }) {
+function EmptyState({ tintColor, mode }: { tintColor: string; mode: 'scanned' | 'asset' }) {
   return (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIconWrap, { borderColor: `${tintColor}40` }]}> 
         <IconSymbol name="music.note" size={40} color={tintColor} />
       </View>
       <ThemedText style={styles.emptyTitle}>Aucune partition</ThemedText>
-      <ThemedText style={styles.emptyHint}>Appuyez sur + pour scanner un QR code de paroles</ThemedText>
+      {mode === 'scanned' ? (
+        <ThemedText style={styles.emptyHint}>Appuyez sur + pour scanner un QR code de paroles</ThemedText>
+      ) : (
+        <ThemedText style={styles.emptyHint}>Les partitions stockées dans l’application apparaissent ici</ThemedText>
+      )}
     </View>
   );
 }
@@ -75,6 +100,21 @@ export default function PartitionsScreen() {
   const { partitions, removePartition } = usePartitions();
   const theme = colorScheme ?? 'light';
   const tintColor = Colors[theme].tint;
+  const surface = Colors[theme].surface;
+  const surfaceBorder = Colors[theme].surfaceBorder;
+  const [menu, setMenu] = useState<'scanned' | 'asset'>('scanned');
+
+  const scannedData = useMemo(
+    () => partitions.map((p) => ({ ...p, kind: 'scanned' as const })),
+    [partitions]
+  );
+
+  const assetData = useMemo(
+    () => ASSET_PARTITIONS.map((p) => ({ id: p.id, title: p.title, kind: 'asset' as const })),
+    []
+  );
+
+  const data = menu === 'scanned' ? scannedData : assetData;
 
   const handleDelete = useCallback((id: string, title: string) => {
     Alert.alert('Supprimer', `Supprimer "${title}" ?`, [
@@ -84,15 +124,24 @@ export default function PartitionsScreen() {
   }, [removePartition]);
 
   const renderItem = useCallback(
-    ({ item }: { item: { id: string; title: string; createdAt: number } }) => (
+    ({ item }: { item: { id: string; title: string; createdAt?: number; kind: 'scanned' | 'asset' } }) => (
       <MemoPartitionCard
         item={item}
         tintColor={tintColor}
-        onPress={() => router.push({ pathname: '/partitions/[id]', params: { id: item.id } })}
-        onDelete={() => handleDelete(item.id, item.title)}
+        surface={surface}
+        surfaceBorder={surfaceBorder}
+        onPress={() =>
+          router.push({
+            pathname: '/partitions/[id]',
+            params: { id: item.id, kind: item.kind },
+          })
+        }
+        onDelete={
+          item.kind === 'scanned' ? () => handleDelete(item.id, item.title) : undefined
+        }
       />
     ),
-    [handleDelete, router, tintColor]
+    [handleDelete, router, surface, surfaceBorder, tintColor]
   );
 
   return (
@@ -106,16 +155,38 @@ export default function PartitionsScreen() {
           </View>
         </View>
         <View style={[styles.countBadge, { borderColor: `${tintColor}50`, backgroundColor: `${tintColor}15` }]}> 
-          <ThemedText style={[styles.countText, { color: tintColor }]}>{partitions.length}</ThemedText>
+          <ThemedText style={[styles.countText, { color: tintColor }]}>{data.length}</ThemedText>
         </View>
       </View>
       <View style={[styles.accentLine, { backgroundColor: tintColor }]} />
 
-      {partitions.length === 0 ? (
-        <EmptyState tintColor={tintColor} />
+      {/* ── Menu selector ── */}
+      <View style={styles.menuRow}>
+        <Pressable
+          onPress={() => setMenu('scanned')}
+          style={[
+            styles.menuPill,
+            { borderColor: surfaceBorder, backgroundColor: menu === 'scanned' ? `${tintColor}18` : surface },
+          ]}
+        >
+          <ThemedText style={[styles.menuText, { color: menu === 'scanned' ? tintColor : Colors[theme].text }]}>Scannées</ThemedText>
+        </Pressable>
+        <Pressable
+          onPress={() => setMenu('asset')}
+          style={[
+            styles.menuPill,
+            { borderColor: surfaceBorder, backgroundColor: menu === 'asset' ? `${tintColor}18` : surface },
+          ]}
+        >
+          <ThemedText style={[styles.menuText, { color: menu === 'asset' ? tintColor : Colors[theme].text }]}>Stockées</ThemedText>
+        </Pressable>
+      </View>
+
+      {data.length === 0 ? (
+        <EmptyState tintColor={tintColor} mode={menu} />
       ) : (
         <FlatList
-          data={partitions}
+          data={data}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
@@ -127,9 +198,14 @@ export default function PartitionsScreen() {
         />
       )}
 
-      <Pressable style={[styles.fab, { backgroundColor: tintColor }]} onPress={() => router.push({ pathname: '/partitions/scan' } as any)}>
-        <IconSymbol name="plus" size={28} color="#fff" />
-      </Pressable>
+      {menu === 'scanned' ? (
+        <Pressable
+          style={[styles.fab, { backgroundColor: tintColor }]}
+          onPress={() => router.push({ pathname: '/partitions/scan' } as any)}
+        >
+          <IconSymbol name="plus" size={28} color="#fff" />
+        </Pressable>
+      ) : null}
     </ThemedView>
   );
 }
@@ -152,6 +228,22 @@ const styles = StyleSheet.create({
   countBadge: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
   countText: { fontSize: 17, fontWeight: '800' },
   accentLine: { height: 2, marginHorizontal: 24, borderRadius: 2, opacity: 0.6, marginBottom: 8 },
+  menuRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 6,
+  },
+  menuPill: {
+    flex: 1,
+    height: 40,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuText: { fontWeight: '900', letterSpacing: 0.2 },
   listContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120 },
   card: {
     flexDirection: 'row',
@@ -159,9 +251,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
     gap: 12,
   },
   playCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
